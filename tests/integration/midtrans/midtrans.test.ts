@@ -38,6 +38,7 @@ const handlers = [
 
     const body = (await request.json()) as Record<string, unknown>;
     const paymentType = body.payment_type as string;
+    const txDetails = body.transaction_details as Record<string, unknown> | undefined;
 
     if (paymentType === 'bank_transfer') {
       return HttpResponse.json(
@@ -45,8 +46,8 @@ const handlers = [
           status_code: '201',
           status_message: 'Success, Bank Transfer transaction is created',
           transaction_id: 'trx-bt-001',
-          order_id: body.transaction_details?.['order_id'] ?? '',
-          gross_amount: String(body.transaction_details?.['gross_amount'] ?? 0),
+          order_id: txDetails?.['order_id'] ?? '',
+          gross_amount: String(txDetails?.['gross_amount'] ?? 0),
           payment_type: 'bank_transfer',
           transaction_time: '2026-07-17T12:00:00Z',
           transaction_status: 'pending',
@@ -62,8 +63,8 @@ const handlers = [
           status_code: '201',
           status_message: 'Success, GoPay transaction is created',
           transaction_id: 'trx-gopay-001',
-          order_id: body.transaction_details?.['order_id'] ?? '',
-          gross_amount: String(body.transaction_details?.['gross_amount'] ?? 0),
+          order_id: txDetails?.['order_id'] ?? '',
+          gross_amount: String(txDetails?.['gross_amount'] ?? 0),
           payment_type: 'gopay',
           transaction_time: '2026-07-17T12:00:00Z',
           transaction_status: 'pending',
@@ -85,8 +86,8 @@ const handlers = [
         status_code: '201',
         status_message: 'Success, transaction is created',
         transaction_id: 'trx-default-001',
-        order_id: body.transaction_details?.['order_id'] ?? '',
-        gross_amount: String(body.transaction_details?.['gross_amount'] ?? 0),
+        order_id: txDetails?.['order_id'] ?? '',
+        gross_amount: String(txDetails?.['gross_amount'] ?? 0),
         payment_type: paymentType,
         transaction_time: '2026-07-17T12:00:00Z',
         transaction_status: 'pending',
@@ -182,10 +183,10 @@ describe('Midtrans Integration', () => {
       const capturedBodies: Record<string, unknown>[] = [];
       const origRequest = (testGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
       (testGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async (
-        _url: string,
-        opts: { body?: Record<string, unknown> },
+        _url?: string,
+        opts?: { body?: Record<string, unknown> },
       ) => {
-        capturedBodies.push(opts.body ?? {});
+        capturedBodies.push(opts?.body ?? {});
         return {
           status: 201,
           body: {
@@ -261,6 +262,81 @@ describe('Midtrans Integration', () => {
       const res = await gateway.refundPayment('order-refund-001');
       expect(res.status).toBe('REFUNDED');
       expect(res.transactionId).toBe('trx-refund-001');
+    });
+  });
+
+  describe('refundPayment', () => {
+    it('processes refund with amount', async () => {
+      const res = await gateway.refundPayment('order-refund-001', 50000);
+      expect(res.status).toBe('REFUNDED');
+    });
+
+    it('throws UnipayError on refund API error', async () => {
+      const badGateway = new MidtransGateway();
+      badGateway.initialize({ serverKey: SERVER_KEY, isProduction: false, debug: false });
+
+      const origRequest = (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async () => ({
+        status: 400,
+        body: { status_code: '400', status_message: 'Refund not allowed' },
+        headers: new Headers(),
+      });
+
+      await expect(badGateway.refundPayment('order-fail')).rejects.toThrow(UnipayError);
+
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = origRequest;
+    });
+  });
+
+  describe('getPaymentStatus error', () => {
+    it('throws UnipayError on API error', async () => {
+      const badGateway = new MidtransGateway();
+      badGateway.initialize({ serverKey: SERVER_KEY, isProduction: false, debug: false });
+
+      const origRequest = (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async () => ({
+        status: 404,
+        body: { status_code: '404', status_message: 'Transaction not found' },
+        headers: new Headers(),
+      });
+
+      await expect(badGateway.getPaymentStatus('nonexistent')).rejects.toThrow(UnipayError);
+
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = origRequest;
+    });
+  });
+
+  describe('authenticate', () => {
+    it('returns token with Basic type', async () => {
+      const res = await gateway.authenticate();
+      expect(res.tokenType).toBe('Basic');
+      expect(res.accessToken).toContain('Basic');
+      expect(res.expiresAt).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('createPayment status_code check', () => {
+    it('throws when status_code is not 200/201', async () => {
+      const badGateway = new MidtransGateway();
+      badGateway.initialize({ serverKey: SERVER_KEY, isProduction: false, debug: false });
+
+      const origRequest = (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async () => ({
+        status: 200,
+        body: {
+          status_code: '400',
+          status_message: 'Invalid transaction',
+          transaction_id: 'trx-fail',
+          order_id: 'order-fail',
+        },
+        headers: new Headers(),
+      });
+
+      await expect(
+        badGateway.createPayment({ amount: 100000, currency: 'IDR', referenceId: 'order-fail' }),
+      ).rejects.toThrow(UnipayError);
+
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = origRequest;
     });
   });
 

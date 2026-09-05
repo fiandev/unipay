@@ -56,24 +56,24 @@ describe('registry', () => {
 
   it('creates a registered gateway and initializes it', () => {
     registerGateway('stripe', MockStripeGateway);
-    const gateway = createGateway('stripe', { secretKey: 'sk_test' });
+    const gateway = createGateway('stripe', { secretKey: 'sk_test', debug: false });
     expect(gateway).toBeDefined();
   });
 });
 
 describe('createGateway with concrete adapters', () => {
   it('creates StripeGateway with valid config', () => {
-    const gateway = createGateway('stripe', { secretKey: 'sk_test_abc' });
+    const gateway = createGateway('stripe', { secretKey: 'sk_test_abc', debug: false });
     expect(gateway).toBeDefined();
   });
 
   it('creates XenditGateway with valid config', () => {
-    const gateway = createGateway('xendit', { secretApiKey: 'xnd_abc' });
+    const gateway = createGateway('xendit', { secretApiKey: 'xnd_abc', debug: false });
     expect(gateway).toBeDefined();
   });
 
   it('creates MidtransGateway with valid config', () => {
-    const gateway = createGateway('midtrans', { serverKey: 'SB-Mid-server-abc' });
+    const gateway = createGateway('midtrans', { serverKey: 'SB-Mid-server-abc', debug: false, isProduction: false });
     expect(gateway).toBeDefined();
   });
 
@@ -82,6 +82,8 @@ describe('createGateway with concrete adapters', () => {
       clientId: 'client-id',
       secretKey: 'secret',
       privateKey: 'private-key',
+      debug: false,
+      isProduction: false,
     });
     expect(gateway).toBeDefined();
   });
@@ -111,8 +113,8 @@ describe('UnipayClient facade', () => {
   it('creates a client with multiple gateways and returns them via use()', () => {
     const client = new UnipayClient({
       gateways: {
-        stripe: { secretKey: 'sk_test' },
-        xendit: { secretApiKey: 'xnd_test' },
+        stripe: { secretKey: 'sk_test', debug: false },
+        xendit: { secretApiKey: 'xnd_test', debug: false },
       },
     });
 
@@ -126,7 +128,7 @@ describe('UnipayClient facade', () => {
   it('use() returns gateways with the expected operations', () => {
     const client = new UnipayClient({
       gateways: {
-        stripe: { secretKey: 'sk_test_client' },
+        stripe: { secretKey: 'sk_test_client', debug: false },
       },
     });
     const clientGateway = client.use('stripe');
@@ -139,7 +141,7 @@ describe('UnipayClient facade', () => {
   it('throws NOT_IMPLEMENTED when using an unconfigured gateway', () => {
     const client = new UnipayClient({
       gateways: {
-        stripe: { secretKey: 'sk_test' },
+        stripe: { secretKey: 'sk_test', debug: false },
       },
     });
 

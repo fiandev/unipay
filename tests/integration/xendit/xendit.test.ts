@@ -20,7 +20,10 @@ gateway.initialize({
   debug: false,
 });
 
-type ApiRequestMock = <T>() => Promise<{ status: number; body: T; headers: Headers }>;
+type ApiRequestMock = (
+  url?: string,
+  opts?: { headers?: Record<string, string>; body?: unknown },
+) => Promise<{ status: number; body: unknown; headers: Headers }>;
 
 const handlers = [
   http.post('https://api.xendit.co/v3/payment_requests', ({ request }) => {
@@ -177,10 +180,10 @@ describe('Xendit Integration', () => {
       const origRequest = (subGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
       const capturedHeaders: Record<string, string> = {};
       (subGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async (
-        _url: string,
-        opts: { headers?: Record<string, string> },
+        _url?: string,
+        opts?: { headers?: Record<string, string> },
       ) => {
-        Object.assign(capturedHeaders, opts.headers ?? {});
+        Object.assign(capturedHeaders, opts?.headers ?? {});
         return {
           status: 200,
           body: {
@@ -226,6 +229,144 @@ describe('Xendit Integration', () => {
     });
   });
 
+  describe('refundPayment', () => {
+    it('processes refund without amount', async () => {
+      const res = await gateway.refundPayment('pr_d3c8f2a1-1234-5678-9abc-def012345678');
+      expect(res.status).toBe('REFUNDED');
+    });
+
+    it('processes refund with amount', async () => {
+      const res = await gateway.refundPayment('pr_d3c8f2a1-1234-5678-9abc-def012345678', 25000);
+      expect(res.status).toBe('REFUNDED');
+    });
+
+    it('throws UnipayError on refund API error', async () => {
+      const badGateway = new XenditGateway();
+      badGateway.initialize({ secretApiKey: 'xnd_secret_xyz', debug: false });
+
+      const origRequest = (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async () => ({
+        status: 400,
+        body: { error_code: 'INVALID_REQUEST', message: 'Invalid refund request' },
+        headers: new Headers(),
+      });
+
+      await expect(badGateway.refundPayment('pr_123')).rejects.toThrow(UnipayError);
+
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = origRequest;
+    });
+  });
+
+  describe('getPaymentStatus error', () => {
+    it('throws UnipayError on API error', async () => {
+      const badGateway = new XenditGateway();
+      badGateway.initialize({ secretApiKey: 'xnd_secret_xyz', debug: false });
+
+      const origRequest = (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async () => ({
+        status: 404,
+        body: { error_code: 'DATA_NOT_FOUND', message: 'Payment request not found' },
+        headers: new Headers(),
+      });
+
+      await expect(badGateway.getPaymentStatus('pr_nonexistent')).rejects.toThrow(UnipayError);
+
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = origRequest;
+    });
+  });
+
+  describe('authenticate', () => {
+    it('returns token with Basic type', async () => {
+      const res = await gateway.authenticate();
+      expect(res.tokenType).toBe('Basic');
+      expect(res.accessToken).toContain('Basic');
+      expect(res.expiresAt).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('createPayment idempotency key', () => {
+    it('uses referenceId as idempotency key when not provided', async () => {
+      const testGateway = new XenditGateway();
+      testGateway.initialize({ secretApiKey: 'xnd_secret_xyz', debug: false });
+
+      const capturedHeaders: Record<string, string> = {};
+      const origRequest = (testGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
+      (testGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async (
+        _url?: string,
+        opts?: { headers?: Record<string, string> },
+      ) => {
+        Object.assign(capturedHeaders, opts?.headers ?? {});
+        return {
+          status: 200,
+          body: {
+            id: 'pr_test',
+            reference_id: 'order-test',
+            status: 'SUCCEEDED',
+            request_amount: 50000,
+            currency: 'IDR',
+            country: 'ID',
+            type: 'PAY',
+            channel_code: 'ID_DANA',
+            created: '2026-07-17T12:00:00Z',
+            updated: '2026-07-17T12:00:05Z',
+          },
+          headers: new Headers(),
+        };
+      };
+
+      await testGateway.createPayment({
+        amount: 50000,
+        currency: 'IDR',
+        referenceId: 'order-test',
+      });
+
+      expect(capturedHeaders['X-IDEMPOTENCY-KEY']).toBe('order-test');
+
+      (testGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = origRequest;
+    });
+
+    it('uses provided idempotencyKey over referenceId', async () => {
+      const testGateway = new XenditGateway();
+      testGateway.initialize({ secretApiKey: 'xnd_secret_xyz', debug: false });
+
+      const capturedHeaders: Record<string, string> = {};
+      const origRequest = (testGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
+      (testGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async (
+        _url?: string,
+        opts?: { headers?: Record<string, string> },
+      ) => {
+        Object.assign(capturedHeaders, opts?.headers ?? {});
+        return {
+          status: 200,
+          body: {
+            id: 'pr_test',
+            reference_id: 'order-test',
+            status: 'SUCCEEDED',
+            request_amount: 50000,
+            currency: 'IDR',
+            country: 'ID',
+            type: 'PAY',
+            channel_code: 'ID_DANA',
+            created: '2026-07-17T12:00:00Z',
+            updated: '2026-07-17T12:00:05Z',
+          },
+          headers: new Headers(),
+        };
+      };
+
+      await testGateway.createPayment({
+        amount: 50000,
+        currency: 'IDR',
+        referenceId: 'order-test',
+        idempotencyKey: 'custom-idempotency-key',
+      });
+
+      expect(capturedHeaders['X-IDEMPOTENCY-KEY']).toBe('custom-idempotency-key');
+
+      (testGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = origRequest;
+    });
+  });
+
   describe('handleWebhook', () => {
     it('verifies matching x-callback-token', () => {
       const payload = JSON.stringify({
@@ -255,6 +396,18 @@ describe('Xendit Integration', () => {
       });
 
       expect(() => gateway.handleWebhook(payload, null)).toThrow(UnipayError);
+    });
+
+    it('throws when webhook verification token not configured', () => {
+      const noTokenGateway = new XenditGateway();
+      noTokenGateway.initialize({ secretApiKey: 'xnd_secret_xyz', debug: false });
+
+      const payload = JSON.stringify({
+        event: 'payment_request.succeeded',
+        data: { id: 'pr_test_webhook' },
+      });
+
+      expect(() => noTokenGateway.handleWebhook(payload, 'token')).toThrow(UnipayError);
     });
   });
 });
