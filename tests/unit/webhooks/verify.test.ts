@@ -1,3 +1,10 @@
+/**
+ * unipay-sdk - Universal TypeScript SDK for popular payment gateways
+ * Copyright (c) 2026 Aditia Akbar Putra A
+ *
+ * Licensed under the MIT License.
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UnipayError } from '../../../src/core/errors.js';
 

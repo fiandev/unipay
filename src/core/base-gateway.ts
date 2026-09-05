@@ -1,3 +1,10 @@
+/**
+ * unipay-sdk - Universal TypeScript SDK for popular payment gateways
+ * Copyright (c) 2026 Aditia Akbar Putra A
+ *
+ * Licensed under the MIT License.
+ */
+
 import type { IPaymentGateway, PaymentRequest, PaymentResponse, Logger } from './types.js';
 import { request as httpRequest } from './http-client.js';
 import type { HttpRequestOptions, HttpResponse } from './http-client.js';

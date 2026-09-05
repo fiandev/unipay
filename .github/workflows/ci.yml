@@ -3,8 +3,7 @@ name: CI
 on:
   push:
     branches: [master]
-  pull_request:
-    branches: [master]
+    tags: ['v*']
 
 jobs:
   test:
@@ -148,3 +147,35 @@ jobs:
           pnpm init > /dev/null 2>&1
           pnpm add "$GITHUB_WORKSPACE/$TARBALL" > /dev/null 2>&1
           node --input-type=module -e "import { UnipayClient } from 'unipay-sdk'; console.log('pnpm ESM OK:', typeof UnipayClient);"
+
+  publish:
+    runs-on: ubuntu-latest
+    name: Publish to npm
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, packaging-smoke-test]
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install and build
+        run: |
+          bun install
+          bun run build
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

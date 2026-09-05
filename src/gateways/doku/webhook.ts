@@ -1,3 +1,10 @@
+/**
+ * unipay-sdk - Universal TypeScript SDK for popular payment gateways
+ * Copyright (c) 2026 Aditia Akbar Putra A
+ *
+ * Licensed under the MIT License.
+ */
+
 import { UnipayError } from '../../core/errors.js';
 import { hmacSha512Hex } from '../../core/signature/hmac.js';
 

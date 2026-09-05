@@ -1,0 +1,85 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [master, dev]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runtime: [bun-latest, node-20, node-22]
+        include:
+          - runtime: bun-latest
+            node-version: '22'
+            use-bun: true
+          - runtime: node-20
+            node-version: '20'
+            use-bun: false
+          - runtime: node-22
+            node-version: '22'
+            use-bun: false
+
+    name: Test (${{ matrix.runtime }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        if: matrix.use-bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Node.js
+        if: ${{ !matrix.use-bun }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: |
+          if [ "${{ matrix.use-bun }}" = "true" ]; then
+            bun install
+          else
+            npm install
+          fi
+
+      - name: Typecheck
+        run: |
+          if [ "${{ matrix.use-bun }}" = "true" ]; then
+            bun run typecheck
+          else
+            npx tsc --noEmit
+          fi
+
+      - name: Lint
+        run: |
+          if [ "${{ matrix.use-bun }}" = "true" ]; then
+            bun run lint
+          else
+            npx eslint src tests
+          fi
+
+      - name: Test with coverage
+        run: |
+          if [ "${{ matrix.use-bun }}" = "true" ]; then
+            bun run test -- --coverage
+          else
+            npx vitest run --coverage
+          fi
+
+      - name: Build
+        run: |
+          if [ "${{ matrix.use-bun }}" = "true" ]; then
+            bun run build
+          else
+            npx tsup
+          fi
+
+      - name: Check no internal type leak
+        run: |
+          if [ "${{ matrix.use-bun }}" = "true" ]; then
+            bun run scripts/check-no-internal-leak.ts
+          else
+            npx tsx scripts/check-no-internal-leak.ts
+          fi

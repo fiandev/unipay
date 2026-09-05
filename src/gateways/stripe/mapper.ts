@@ -1,3 +1,10 @@
+/**
+ * unipay-sdk - Universal TypeScript SDK for popular payment gateways
+ * Copyright (c) 2026 Aditia Akbar Putra A
+ *
+ * Licensed under the MIT License.
+ */
+
 import type { PaymentRequest, PaymentResponseStatus } from '../../core/types.js';
 import type { StripePaymentIntent, StripePaymentIntentStatus } from './types.js';
 

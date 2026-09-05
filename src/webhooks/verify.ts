@@ -1,3 +1,10 @@
+/**
+ * unipay-sdk - Universal TypeScript SDK for popular payment gateways
+ * Copyright (c) 2026 Aditia Akbar Putra A
+ *
+ * Licensed under the MIT License.
+ */
+
 import type { GatewayName, WebhookEvent } from '../core/types.js';
 import { UnipayError } from '../core/errors.js';
 import { verifyStripeWebhook } from '../gateways/stripe/webhook.js';

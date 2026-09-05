@@ -1,4 +1,11 @@
 /**
+ * unipay-sdk - Universal TypeScript SDK for popular payment gateways
+ * Copyright (c) 2026 Aditia Akbar Putra A
+ *
+ * Licensed under the MIT License.
+ */
+
+/**
  * Script to verify that internal vendor types are NOT leaked into the public
  * dist/index.d.ts after build. Exits with code 0 if clean, 1 if leaks found.
  *

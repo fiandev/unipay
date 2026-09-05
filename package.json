@@ -1,6 +1,6 @@
 {
   "name": "unipay-sdk",
-  "version": "0.1.0",
+  "version": "1.0.0-beta",
   "description": "Universal TypeScript SDK for popular payment gateways",
   "type": "module",
   "main": "./dist/index.cjs",
