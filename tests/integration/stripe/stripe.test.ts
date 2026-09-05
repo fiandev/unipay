@@ -28,7 +28,7 @@ async function buildStripeSignature(payload: string, secret: string): Promise<st
   return `t=${timestamp},v1=${signature}`;
 }
 
-type ApiRequestMock = <T>() => Promise<{ status: number; body: T; headers: Headers }>;
+type ApiRequestMock = () => Promise<{ status: number; body: unknown; headers: Headers }>;
 
 const handlers = [
   http.post('https://api.stripe.com/v1/payment_intents', ({ request }) => {
@@ -186,6 +186,63 @@ describe('Stripe Integration', () => {
     });
   });
 
+  describe('refundPayment', () => {
+    it('processes refund without amount', async () => {
+      const res = await gateway.refundPayment('pi_3R2abc123DEF');
+      expect(res.status).toBe('REFUNDED');
+      expect(res.transactionId).toBe('re_test_refund');
+    });
+
+    it('processes refund with amount', async () => {
+      const res = await gateway.refundPayment('pi_3R2abc123DEF', 1000);
+      expect(res.status).toBe('REFUNDED');
+      expect(res.transactionId).toBe('re_test_refund');
+    });
+
+    it('throws UnipayError on refund API error', async () => {
+      const badGateway = new StripeGateway();
+      badGateway.initialize({ secretKey: 'sk_test_xyz', debug: false });
+
+      const origRequest = (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async () => ({
+        status: 400,
+        body: { error: { code: 'charge_already_refunded', message: 'Already refunded' } },
+        headers: new Headers(),
+      });
+
+      await expect(badGateway.refundPayment('pi_123')).rejects.toThrow(UnipayError);
+
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = origRequest;
+    });
+  });
+
+  describe('getPaymentStatus error', () => {
+    it('throws UnipayError on API error', async () => {
+      const badGateway = new StripeGateway();
+      badGateway.initialize({ secretKey: 'sk_test_xyz', debug: false });
+
+      const origRequest = (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest;
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = async () => ({
+        status: 404,
+        body: { error: { code: 'resource_missing', message: 'No such payment_intent' } },
+        headers: new Headers(),
+      });
+
+      await expect(badGateway.getPaymentStatus('pi_nonexistent')).rejects.toThrow(UnipayError);
+
+      (badGateway as unknown as { apiRequest: ApiRequestMock }).apiRequest = origRequest;
+    });
+  });
+
+  describe('authenticate', () => {
+    it('returns token with Bearer type', async () => {
+      const res = await gateway.authenticate();
+      expect(res.accessToken).toBe('sk_test_xyz');
+      expect(res.tokenType).toBe('Bearer');
+      expect(res.expiresAt).toBeInstanceOf(Date);
+    });
+  });
+
   describe('handleWebhook', () => {
     it('verifies valid webhook signature', async () => {
       const payload = JSON.stringify({
@@ -221,6 +278,13 @@ describe('Stripe Integration', () => {
       await expect(gateway.handleWebhook(payload, 'invalid-header-format')).rejects.toThrow(
         UnipayError,
       );
+    });
+
+    it('throws when webhook secret not configured', async () => {
+      const noSecretGateway = new StripeGateway();
+      noSecretGateway.initialize({ secretKey: 'sk_test_xyz', debug: false });
+
+      await expect(noSecretGateway.handleWebhook('{}', 'sig')).rejects.toThrow(UnipayError);
     });
   });
 });
