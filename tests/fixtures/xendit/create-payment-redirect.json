@@ -1,0 +1,22 @@
+{
+  "id": "pr_a5b6c7d8-3456-7890-abcd-ef0123456789",
+  "reference_id": "order-xnd-redirect-001",
+  "status": "REQUIRES_ACTION",
+  "request_amount": 75000,
+  "currency": "IDR",
+  "country": "ID",
+  "type": "PAY",
+  "channel_code": "CARDS",
+  "actions": [
+    {
+      "type": "REDIRECT_CUSTOMER",
+      "value": "https://checkout.xendit.co/cards/redirect/abc123"
+    }
+  ],
+  "customer": {
+    "given_names": "Bob",
+    "email": "bob@example.com"
+  },
+  "created": "2026-07-17T12:00:00Z",
+  "updated": "2026-07-17T12:00:05Z"
+}

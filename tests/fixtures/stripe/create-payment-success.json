@@ -1,0 +1,13 @@
+{
+  "id": "pi_3R2abc123DEF",
+  "object": "payment_intent",
+  "amount": 2000,
+  "currency": "usd",
+  "status": "succeeded",
+  "metadata": {
+    "order_id": "order-001"
+  },
+  "receipt_email": "customer@example.com",
+  "description": "Test payment",
+  "client_secret": "pi_3R2abc123DEF_secret_xyz"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "pi_3R2abc1234DS",
+  "object": "payment_intent",
+  "amount": 5000,
+  "currency": "usd",
+  "status": "requires_action",
+  "metadata": {
+    "order_id": "order-3ds-001"
+  },
+  "client_secret": "pi_3R2abc1234DS_secret_xyz",
+  "next_action": {
+    "type": "redirect_to_url",
+    "redirect_to_url": {
+      "url": "https://hooks.stripe.com/3ds/redirect/abc123",
+      "return_url": "https://example.com/return"
+    }
+  }
+}

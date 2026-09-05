@@ -1,0 +1,19 @@
+{
+  "id": "evt_test_webhook",
+  "type": "payment_intent.succeeded",
+  "data": {
+    "object": {
+      "id": "pi_3R2abc123DEF",
+      "object": "payment_intent",
+      "amount": 2000,
+      "currency": "usd",
+      "status": "succeeded",
+      "metadata": {
+        "order_id": "order-001"
+      }
+    }
+  },
+  "created": 1721234567,
+  "livemode": false,
+  "pending_webhooks": 0
+}

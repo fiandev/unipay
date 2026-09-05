@@ -1,0 +1,18 @@
+{
+  "id": "pr_f4e9b3c2-2345-6789-abcd-ef0123456789",
+  "reference_id": "order-xnd-fail-001",
+  "status": "FAILED",
+  "request_amount": 25000,
+  "currency": "IDR",
+  "country": "ID",
+  "type": "PAY",
+  "channel_code": "ID_DANA",
+  "failure_code": "INSUFFICIENT_BALANCE",
+  "failure_message": "The customer's e-wallet balance is insufficient",
+  "customer": {
+    "given_names": "Jane",
+    "email": "jane@example.com"
+  },
+  "created": "2026-07-17T12:00:00Z",
+  "updated": "2026-07-17T12:00:05Z"
+}

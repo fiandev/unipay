@@ -1,0 +1,83 @@
+{
+  "name": "unipay-sdk",
+  "version": "0.1.0",
+  "description": "Universal TypeScript SDK for popular payment gateways",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./stripe": {
+      "types": "./dist/stripe.d.ts",
+      "import": "./dist/stripe.js",
+      "require": "./dist/stripe.cjs"
+    },
+    "./xendit": {
+      "types": "./dist/xendit.d.ts",
+      "import": "./dist/xendit.js",
+      "require": "./dist/xendit.cjs"
+    },
+    "./midtrans": {
+      "types": "./dist/midtrans.d.ts",
+      "import": "./dist/midtrans.js",
+      "require": "./dist/midtrans.cjs"
+    },
+    "./doku": {
+      "types": "./dist/doku.d.ts",
+      "import": "./dist/doku.js",
+      "require": "./dist/doku.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "build:check": "tsup && bun run scripts/check-no-internal-leak.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "prepare": "husky"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,yaml,yml}": [
+      "prettier --write"
+    ],
+    "*.ts": [
+      "eslint --fix"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/bun": "latest",
+    "eslint": "^10.7.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "msw": "^2.15.0",
+    "prettier": "^3.9.5",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.64.0",
+    "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
