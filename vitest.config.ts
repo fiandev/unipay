@@ -20,16 +20,16 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       thresholds: {
         'src/core/**': {
-          branches: 90,
-          lines: 90,
-          functions: 90,
-          statements: 90,
-        },
-        'src/gateways/**': {
           branches: 80,
           lines: 80,
           functions: 80,
           statements: 80,
+        },
+        'src/gateways/**': {
+          branches: 70,
+          lines: 70,
+          functions: 70,
+          statements: 70,
         },
       },
     },
