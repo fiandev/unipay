@@ -99,6 +99,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Install and build
         run: |
           bun install
